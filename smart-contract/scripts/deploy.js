@@ -1,14 +1,21 @@
 const hre = require("hardhat");
 
 async function main() {
-  console.log("🚀 Deploying DocumentVerifier...");
-  const DocumentVerifier = await hre.ethers.getContractFactory("DocumentVerifier");
-  const contract = await DocumentVerifier.deploy();
-  await contract.waitForDeployment();
-  console.log("✅ Contract deployed at:", await contract.getAddress());
+  const [deployer] = await hre.ethers.getSigners();
+  console.log("Deploying with:", deployer.address);
+
+  const Registry = await hre.ethers.getContractFactory("IssuerRegistry");
+  const registry = await Registry.deploy();
+  await registry.waitForDeployment();
+  console.log("✅ IssuerRegistry:", registry.target);
+
+  const Verifier = await hre.ethers.getContractFactory("DocumentVerifier");
+  const verifier = await Verifier.deploy(registry.target);
+  await verifier.waitForDeployment();
+  console.log("✅ DocumentVerifier:", verifier.target);
 }
 
-main().catch((error) => {
-  console.error("❌ Error:", error);
+main().catch((e) => {
+  console.error(e);
   process.exitCode = 1;
 });

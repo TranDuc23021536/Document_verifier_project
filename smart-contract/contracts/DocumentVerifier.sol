@@ -1,29 +1,46 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "./IssuerRegistry.sol";
+
 contract DocumentVerifier {
     struct Document {
-        address issuer;
+        bool exists;
+        uint256 issuerId;
         uint256 timestamp;
     }
 
     mapping(bytes32 => Document) public documents;
+    IssuerRegistry public registry;
 
-    event DocumentUploaded(bytes32 hash, address issuer, uint256 timestamp);
+    event DocumentStored(bytes32 hash, uint256 issuerId, uint256 timestamp);
 
-    function storeDocument(bytes32 hash) public {
-        require(documents[hash].issuer == address(0), "Already stored!");
-        documents[hash] = Document(msg.sender, block.timestamp);
-        emit DocumentUploaded(hash, msg.sender, block.timestamp);
+    constructor(address _registry) {
+        registry = IssuerRegistry(_registry);
+    }
+
+    function storeDocument(bytes32 hash, uint256 issuerId) external {
+        require(!documents[hash].exists, "Already stored");
+        documents[hash] = Document(true, issuerId, block.timestamp);
+        emit DocumentStored(hash, issuerId, block.timestamp);
     }
 
     function verifyDocument(bytes32 hash)
-        public
+        external
         view
-        returns (bool exists, address issuer, uint256 timestamp)
+        returns (
+            bool exists,
+            uint256 issuerId,
+            string memory name,
+            string memory org,
+            string memory email,
+            address owner,
+            uint256 timestamp
+        )
     {
         Document memory doc = documents[hash];
-        if (doc.issuer == address(0)) return (false, address(0), 0);
-        return (true, doc.issuer, doc.timestamp);
+        if (!doc.exists) return (false, 0, "", "", "", address(0), 0);
+        (name, org, email, owner) = registry.getIssuer(doc.issuerId);
+        return (true, doc.issuerId, name, org, email, owner, doc.timestamp);
     }
 }
