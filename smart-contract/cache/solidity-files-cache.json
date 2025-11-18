@@ -1,45 +1,9 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "C:\\Users\\ducal\\OneDrive\\Documents\\document-verifier\\smart-contract\\contracts\\DocumentVerifier.sol": {
-      "lastModificationDate": 1761801892596,
-      "contentHash": "8f8dd4fc90c394db7887c1ac353c7d7b",
-      "sourceName": "contracts/DocumentVerifier.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "evmVersion": "paris",
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.20"
-      ],
-      "artifacts": [
-        "DocumentVerifier"
-      ]
-    },
-    "C:\\Users\\ducal\\OneDrive\\Documents\\Document_verifier_project\\smart-contract\\contracts\\DocumentVerifier.sol": {
-      "lastModificationDate": 1761884784123,
-      "contentHash": "8c0f3ebabb0f9f5aafff99b27c1a06dc",
+    "D:\\GitHub\\Document_verifier_project\\smart-contract\\contracts\\DocumentVerifier.sol": {
+      "lastModificationDate": 1763459974085,
+      "contentHash": "2dee88f3c66226129f712e2fc2cce5ac",
       "sourceName": "contracts/DocumentVerifier.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -75,8 +39,8 @@
         "DocumentVerifier"
       ]
     },
-    "C:\\Users\\ducal\\OneDrive\\Documents\\Document_verifier_project\\smart-contract\\contracts\\IssuerRegistry.sol": {
-      "lastModificationDate": 1761884776744,
+    "D:\\GitHub\\Document_verifier_project\\smart-contract\\contracts\\IssuerRegistry.sol": {
+      "lastModificationDate": 1763211607010,
       "contentHash": "c28ef30ba9a6d539c436676822d5d90f",
       "sourceName": "contracts/IssuerRegistry.sol",
       "solcConfig": {

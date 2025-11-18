@@ -4,8 +4,8 @@ import verifierAbi from "./abi/DocumentVerifier.json";
 import registryAbi from "./abi/IssuerRegistry.json";
 import "./App.css";
 
-const VERIFIER_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 const REGISTRY_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const VERIFIER_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 
 export default function App() {
   const [account, setAccount] = useState("");
@@ -30,12 +30,12 @@ export default function App() {
       time,
       location,
       message: errMsg,
-      suggestion: suggestion || "Xem console để biết chi tiết thêm.",
+      suggestion: suggestion || "Check the console for more details.",
     };
     console.error(`❌ [${location}]`, err);
     setErrorLogs((prev) => [details, ...prev]);
     addHistory(`❌ ${location}: ${errMsg}`, "error");
-    setStatus(`❌ Lỗi tại ${location}: ${errMsg}`);
+    setStatus(`❌ Error at ${location}: ${errMsg}`);
   };
 
   const getProvider = async () => {
@@ -44,21 +44,21 @@ export default function App() {
       provider.getNetwork = async () => ({ name: "hardhat", chainId: 31337, ensAddress: null });
       return provider;
     } catch (err) {
-      addError("getProvider", err, "Kiểm tra MetaMask hoặc Hardhat node.");
+      addError("getProvider", err, "Check MetaMask or Hardhat node.");
       throw err;
     }
   };
 
   async function connectWallet() {
     try {
-      if (!window.ethereum) throw new Error("MetaMask chưa được cài!");
+      if (!window.ethereum) throw new Error("MetaMask is not installed!");
       const provider = await getProvider();
       const [addr] = await provider.send("eth_requestAccounts", []);
       setAccount(addr);
-      setStatus("✅ Kết nối MetaMask thành công!");
-      addHistory(`🔗 Kết nối MetaMask thành công: ${addr}`);
+      setStatus("✅ Connected to MetaMask!");
+      addHistory(`🔗 MetaMask connected: ${addr}`);
     } catch (err) {
-      addError("connectWallet", err, "Hãy mở MetaMask và thử lại.");
+      addError("connectWallet", err, "Open MetaMask and try again.");
     }
   }
 
@@ -70,18 +70,18 @@ export default function App() {
       const registry = new ethers.Contract(REGISTRY_ADDRESS, registryAbi.abi, signer);
 
       if (!issuer.name || !issuer.organization || !issuer.email)
-        throw new Error("Thiếu thông tin Issuer.");
+        throw new Error("Missing issuer information.");
 
-      setStatus("⏳ Đang gửi giao dịch đăng ký...");
+      setStatus("⏳ Sending registration transaction...");
       const tx = await registry.registerIssuer(issuer.name, issuer.organization, issuer.email);
       await tx.wait();
-      setStatus("✅ Đăng ký Issuer thành công!");
-      addHistory(`✅ Đăng ký Issuer: ${issuer.name} (${issuer.organization})`);
+      setStatus("✅ Issuer registered successfully!");
+      addHistory(`✅ Registered Issuer: ${issuer.name} (${issuer.organization})`);
       setIssuer({ name: "", organization: "", email: "" });
       await loadIssuers();
     } catch (err) {
       if (err.reason?.includes("Empty name")) {
-        addError("registerIssuer", err, "Tên Issuer không được để trống.");
+        addError("registerIssuer", err, "Issuer name cannot be empty.");
       } else {
         addError("registerIssuer", err);
       }
@@ -105,34 +105,32 @@ export default function App() {
       }));
       setIssuersList(formatted);
       if (formatted.length > 0) {
-        addHistory(`📋 Đã tải ${formatted.length} issuer(s) từ blockchain`);
+        addHistory(`📋 Loaded ${formatted.length} issuers from blockchain`);
       }
     } catch (err) {
-      addError("loadIssuers", err, "Kiểm tra ABI và contract address.");
+      addError("loadIssuers", err, "Check ABI or contract address.");
     }
   }
 
   useEffect(() => {
     loadIssuers();
-    // Auto-connect if already connected
     if (window.ethereum) {
-      window.ethereum.request({ method: "eth_accounts" })
-        .then(accounts => {
-          if (accounts.length > 0) {
-            setAccount(accounts[0]);
-            addHistory(`🔗 Tự động kết nối: ${accounts[0]}`);
-          }
-        });
+      window.ethereum.request({ method: "eth_accounts" }).then((accounts) => {
+        if (accounts.length > 0) {
+          setAccount(accounts[0]);
+          addHistory(`🔗 Auto-connected: ${accounts[0]}`);
+        }
+      });
     }
   }, []);
 
   async function storeHash() {
-    if (!file) return alert("⚠️ Chưa chọn file!");
-    if (!selectedIssuer) return alert("⚠️ Chưa chọn Issuer!");
+    if (!file) return alert("⚠️ No file selected!");
+    if (!selectedIssuer) return alert("⚠️ No issuer selected!");
 
     try {
       setLoading(true);
-      setStatus("🔄 Đang tính toán SHA256 hash...");
+      setStatus("🔄 Computing SHA256 hash...");
       const buffer = await file.arrayBuffer();
       const hash = ethers.sha256(new Uint8Array(buffer));
 
@@ -140,15 +138,18 @@ export default function App() {
       const signer = await provider.getSigner();
       const verifier = new ethers.Contract(VERIFIER_ADDRESS, verifierAbi.abi, signer);
 
-      setStatus("📤 Đang gửi giao dịch lưu hash...");
+      setStatus("📤 Sending transaction to store hash...");
       const tx = await verifier.storeDocument(hash, Number(selectedIssuer));
       await tx.wait();
-      
-      setStatus(`✅ Lưu hash thành công!\n\n📝 File: ${file.name}\n🔑 Hash: ${hash}\n⛓️ Transaction: ${tx.hash}`);
-      addHistory(`✅ Lưu hash: ${file.name}`);
+
+      setStatus(`✅ Hash stored successfully!
+📝 File: ${file.name}
+🔑 Hash: ${hash}
+⛓ Tx: ${tx.hash}`);
+      addHistory(`✅ Stored hash: ${file.name}`);
     } catch (err) {
       if (err.reason?.includes("Already stored"))
-        addError("storeHash", err, "Tài liệu này đã được lưu trước đó.");
+        addError("storeHash", err, "This document was already stored.");
       else addError("storeHash", err);
     } finally {
       setLoading(false);
@@ -156,30 +157,68 @@ export default function App() {
   }
 
   async function verifyFile() {
-    if (!file) return alert("⚠️ Chưa chọn file!");
+    if (!file) return alert("⚠️ No file selected!");
     try {
       setLoading(true);
-      setStatus("🔄 Đang tính toán SHA256 hash...");
+      setStatus("🔄 Computing SHA256 hash...");
       const buffer = await file.arrayBuffer();
       const hash = ethers.sha256(new Uint8Array(buffer));
-      
-      setStatus("🔍 Đang xác minh trên blockchain...");
+
+      setStatus("🔍 Verifying on blockchain...");
       const provider = await getProvider();
       const verifier = new ethers.Contract(VERIFIER_ADDRESS, verifierAbi.abi, provider);
 
       const [exists, id, name, org, email, owner, timestamp] = await verifier.verifyDocument(hash);
-      if (!exists) throw new Error("File chưa được lưu trên blockchain.");
+      if (!exists) throw new Error("This document is not stored on the blockchain.");
 
-      const info = `✅ File hợp lệ!\n\n📝 File: ${file.name}\n🔑 Hash: ${hash}\n\n👤 Issuer: ${name}\n🏢 Tổ chức: ${org}\n📧 Email: ${email}\n💼 Owner: ${owner}\n📅 Thời gian: ${new Date(
-        Number(timestamp) * 1000
-      ).toLocaleString()}`;
+      const info = `✅ Document verified!
+
+📝 File: ${file.name}
+🔑 Hash: ${hash}
+
+👤 Issuer: ${name}
+🏢 Organization: ${org}
+📧 Email: ${email}
+💼 Owner: ${owner}
+📅 Timestamp: ${new Date(Number(timestamp) * 1000).toLocaleString()}`;
+
       setStatus(info);
-      addHistory(`✅ Xác minh file: ${file.name}`);
+      addHistory(`✅ Verified file: ${file.name}`);
     } catch (err) {
-      if (err.message?.includes("chưa được lưu")) {
-        addError("verifyFile", err, "File này chưa được đăng ký trên blockchain.");
+      addError("verifyFile", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function deleteFile() {
+    if (!file) return alert("⚠️ No file selected!");
+
+    try {
+      setLoading(true);
+      setStatus("🗑️ Computing SHA256 hash...");
+      const buffer = await file.arrayBuffer();
+      const hash = ethers.sha256(new Uint8Array(buffer));
+
+      const provider = await getProvider();
+      const signer = await provider.getSigner();
+      const verifier = new ethers.Contract(VERIFIER_ADDRESS, verifierAbi.abi, signer);
+
+      setStatus("🗑️ Sending delete transaction...");
+      const tx = await verifier.deleteDocument(hash);
+      await tx.wait();
+
+      setStatus(`✅ Document deleted!
+🗑️ Hash: ${hash}
+⛓ Tx: ${tx.hash}`);
+      addHistory(`🗑️ Deleted document: ${file.name}`);
+    } catch (err) {
+      if (err.reason?.includes("Not document owner")) {
+        addError("deleteFile", err, "You are not the owner of this document.");
+      } else if (err.reason?.includes("Document does not exist")) {
+        addError("deleteFile", err, "This document does not exist on the blockchain.");
       } else {
-        addError("verifyFile", err, "Kiểm tra xem file đã được lưu chưa.");
+        addError("deleteFile", err);
       }
     } finally {
       setLoading(false);
@@ -189,20 +228,20 @@ export default function App() {
   return (
     <div className="container">
       <h1>🔐 Blockchain Document Verifier</h1>
-      
+
       <button onClick={connectWallet} className="connect-btn">
-        {account ? `✅ ${account.slice(0, 6)}...${account.slice(-4)}` : "🔗 Kết nối MetaMask"}
+        {account ? `✅ ${account.slice(0, 6)}...${account.slice(-4)}` : "🔗 Connect MetaMask"}
       </button>
 
       <section>
-        <h2>🏢 Đăng ký Issuer</h2>
-        <input 
-          placeholder="Tên issuer" 
+        <h2>🏢 Register Issuer</h2>
+        <input
+          placeholder="Issuer Name"
           value={issuer.name}
-          onChange={(e) => setIssuer({ ...issuer, name: e.target.value })} 
+          onChange={(e) => setIssuer({ ...issuer, name: e.target.value })}
         />
         <input
-          placeholder="Tổ chức"
+          placeholder="Organization"
           value={issuer.organization}
           onChange={(e) => setIssuer({ ...issuer, organization: e.target.value })}
         />
@@ -213,49 +252,66 @@ export default function App() {
           onChange={(e) => setIssuer({ ...issuer, email: e.target.value })}
         />
         <button onClick={registerIssuer} disabled={loading}>
-          {loading ? "⏳ Đang xử lý..." : "📝 Đăng ký Issuer"}
+          {loading ? "⏳ Processing..." : "📝 Register Issuer"}
         </button>
       </section>
 
       <section>
-        <h2>📁 Xác minh / Lưu tài liệu</h2>
+        <h2>📁 Verify / Store / Delete Document</h2>
         <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+
         {file && (
-          <div style={{
-            padding: '12px',
-            background: '#f0f9ff',
-            borderRadius: '10px',
-            marginBottom: '16px',
-            fontSize: '14px',
-            color: '#0284c7'
-          }}>
-            📎 Đã chọn: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(2)} KB)
+          <div
+            style={{
+              padding: "12px",
+              background: "#f0f9ff",
+              borderRadius: "10px",
+              marginBottom: "16px",
+              fontSize: "14px",
+              color: "#0284c7",
+            }}
+          >
+            📎 Selected: <strong>{file.name}</strong>{" "}
+            ({(file.size / 1024).toFixed(2)} KB)
           </div>
         )}
+
         <select onChange={(e) => setSelectedIssuer(e.target.value)} value={selectedIssuer}>
-          <option value="">-- Chọn Issuer --</option>
+          <option value="">-- Select Issuer --</option>
           {issuersList.map((i) => (
             <option key={i.id} value={i.id}>
               {i.name} ({i.org})
             </option>
           ))}
         </select>
+
         <button onClick={storeHash} disabled={loading}>
-          {loading ? "⏳ Đang lưu..." : "📤 Lưu Hash"}
+          {loading ? "⏳ Storing..." : "📤 Store Hash"}
         </button>
+
         <button onClick={verifyFile} disabled={loading}>
-          {loading ? "🔍 Đang kiểm tra..." : "✓ Xác minh"}
+          {loading ? "🔍 Verifying..." : "✓ Verify"}
+        </button>
+
+        <button
+          onClick={deleteFile}
+          disabled={loading}
+          style={{ background: "#dc2626" }}
+        >
+          {loading ? "🗑️ Deleting..." : "🗑️ Delete Document"}
         </button>
       </section>
 
-      <pre className="status-box">{status || "💡 Chọn file và thực hiện các thao tác trên"}</pre>
+      <pre className="status-box">
+        {status || "💡 Select a document and choose an action"}
+      </pre>
 
       <section>
-        <h2>📜 Lịch sử hoạt động</h2>
+        <h2>📜 Activity History</h2>
         <ul className="history-list">
           {history.length === 0 && (
-            <li style={{textAlign: 'center', color: '#94a3b8', fontStyle: 'italic'}}>
-              Chưa có hoạt động nào
+            <li style={{ textAlign: "center", color: "#94a3b8", fontStyle: "italic" }}>
+              No activity yet
             </li>
           )}
           {history.map((h, i) => (
@@ -268,11 +324,17 @@ export default function App() {
       </section>
 
       <section>
-        <h2>⚠️ Log lỗi chi tiết</h2>
+        <h2>⚠️ Error Logs</h2>
         <ul className="error-list">
           {errorLogs.length === 0 && (
-            <li style={{background: '#f0fdf4', borderLeftColor: '#22c55e', color: '#166534'}}>
-              ✅ Không có lỗi nào - Hệ thống hoạt động bình thường
+            <li
+              style={{
+                background: "#f0fdf4",
+                borderLeftColor: "#22c55e",
+                color: "#166534",
+              }}
+            >
+              ✅ No errors – system is stable
             </li>
           )}
           {errorLogs.map((e, i) => (
